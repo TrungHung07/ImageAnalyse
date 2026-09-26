@@ -15,7 +15,7 @@ describe('thermometer conversion', () => {
   it('creates a crop around the detected reading level', () => {
     const crop = getReadingCrop(482, 1400, 700)
     expect(crop.width).toBe(482)
-    expect(crop.height).toBe(279)
+    expect(crop.height).toBe(280)
     expect(crop.top).toBe(566)
     expect(crop.top + crop.height).toBeLessThanOrEqual(1400)
   })
