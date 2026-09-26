@@ -68,6 +68,13 @@ export function fahrenheitFromCelsius(celsius) {
   return celsius * 9 / 5 + 32
 }
 
+export function getReadingCrop(width, height, endpoint) {
+  const cropWidth = width
+  const cropHeight = Math.min(height, Math.max(160, Math.round(width * 0.58)))
+  const top = Math.max(0, Math.min(height - cropHeight, Math.round(endpoint - cropHeight * 0.48)))
+  return { left: 0, top, width: cropWidth, height: cropHeight }
+}
+
 export function analyzeThermometer(canvas) {
   const context = canvas.getContext('2d', { willReadFrequently: true })
   const { width, height } = canvas
@@ -78,35 +85,38 @@ export function analyzeThermometer(canvas) {
   const celsius = celsiusFromY(endpoint, scale.top, scale.bottom)
   const fahrenheit = fahrenheitFromCelsius(celsius)
   const confidence = Math.min(0.98, Math.max(0.22, column.strength * 2.4))
+  const crop = getReadingCrop(width, height, endpoint)
   const annotated = document.createElement('canvas')
-  annotated.width = width
-  annotated.height = height
+  annotated.width = crop.width
+  annotated.height = crop.height
   const output = annotated.getContext('2d')
-  output.drawImage(canvas, 0, 0)
-  const liquidBase = column.source === 'red liquid' ? column.bottom : Math.round(height * 0.82)
-  const markerLeft = Math.max(0, Math.floor(width * 0.2))
-  const markerRight = Math.min(width, Math.ceil(width * 0.8))
+  output.drawImage(canvas, crop.left, crop.top, crop.width, crop.height, 0, 0, crop.width, crop.height)
+  const cropEndpoint = endpoint - crop.top
+  const cropLiquidBase = (column.source === 'red liquid' ? column.bottom : Math.round(height * 0.82)) - crop.top
+  const cropColumnX = column.x - crop.left
+  const markerLeft = 0
+  const markerRight = crop.width
   output.lineCap = 'round'
-  output.lineWidth = Math.max(4, width / 48)
+  output.lineWidth = Math.max(4, crop.width / 48)
   output.strokeStyle = 'rgba(213, 95, 50, 0.35)'
   output.beginPath()
-  output.moveTo(column.x, liquidBase)
-  output.lineTo(column.x, endpoint)
+  output.moveTo(cropColumnX, Math.min(crop.height, Math.max(0, cropLiquidBase)))
+  output.lineTo(cropColumnX, cropEndpoint)
   output.stroke()
-  output.lineWidth = Math.max(2, width / 130)
+  output.lineWidth = Math.max(2, crop.width / 130)
   output.strokeStyle = '#d55f32'
   output.beginPath()
-  output.moveTo(markerLeft, endpoint)
-  output.lineTo(markerRight, endpoint)
+  output.moveTo(markerLeft, cropEndpoint)
+  output.lineTo(markerRight, cropEndpoint)
   output.stroke()
   output.fillStyle = '#d55f32'
   output.beginPath()
-  output.arc(column.x, endpoint, Math.max(7, width / 30), 0, Math.PI * 2)
+  output.arc(cropColumnX, cropEndpoint, Math.max(7, crop.width / 30), 0, Math.PI * 2)
   output.fill()
-  output.font = `600 ${Math.max(16, width / 20)}px Space Grotesk, sans-serif`
+  output.font = `600 ${Math.max(16, crop.width / 20)}px Space Grotesk, sans-serif`
   const label = `${celsius.toFixed(1)}°C`
-  const labelX = Math.min(width - 150, Math.max(8, column.x + width * 0.08))
-  const labelY = Math.max(34, endpoint - width * 0.08)
+  const labelX = Math.min(crop.width - 150, Math.max(8, cropColumnX + crop.width * 0.08))
+  const labelY = Math.max(34, cropEndpoint - crop.width * 0.08)
   const labelWidth = output.measureText(label).width + 20
   output.fillStyle = 'rgba(255, 253, 248, 0.92)'
   output.fillRect(labelX - 10, labelY - 26, labelWidth, 34)
