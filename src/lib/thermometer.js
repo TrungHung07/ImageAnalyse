@@ -83,18 +83,35 @@ export function analyzeThermometer(canvas) {
   annotated.height = height
   const output = annotated.getContext('2d')
   output.drawImage(canvas, 0, 0)
-  output.lineWidth = Math.max(2, width / 180)
-  output.strokeStyle = '#d55f32'
-  output.fillStyle = '#d55f32'
+  const liquidBase = column.source === 'red liquid' ? column.bottom : Math.round(height * 0.82)
+  const markerLeft = Math.max(0, Math.floor(width * 0.2))
+  const markerRight = Math.min(width, Math.ceil(width * 0.8))
+  output.lineCap = 'round'
+  output.lineWidth = Math.max(4, width / 48)
+  output.strokeStyle = 'rgba(213, 95, 50, 0.35)'
   output.beginPath()
-  output.moveTo(column.x, scale.top)
+  output.moveTo(column.x, liquidBase)
   output.lineTo(column.x, endpoint)
   output.stroke()
+  output.lineWidth = Math.max(2, width / 130)
+  output.strokeStyle = '#d55f32'
   output.beginPath()
-  output.arc(column.x, endpoint, Math.max(5, width / 45), 0, Math.PI * 2)
+  output.moveTo(markerLeft, endpoint)
+  output.lineTo(markerRight, endpoint)
+  output.stroke()
+  output.fillStyle = '#d55f32'
+  output.beginPath()
+  output.arc(column.x, endpoint, Math.max(7, width / 30), 0, Math.PI * 2)
   output.fill()
-  output.font = `600 ${Math.max(14, width / 24)}px Space Grotesk, sans-serif`
-  output.fillText(`${celsius.toFixed(1)}°C`, Math.min(width - 130, column.x + 18), Math.max(24, endpoint - 12))
+  output.font = `600 ${Math.max(16, width / 20)}px Space Grotesk, sans-serif`
+  const label = `${celsius.toFixed(1)}°C`
+  const labelX = Math.min(width - 150, Math.max(8, column.x + width * 0.08))
+  const labelY = Math.max(34, endpoint - width * 0.08)
+  const labelWidth = output.measureText(label).width + 20
+  output.fillStyle = 'rgba(255, 253, 248, 0.92)'
+  output.fillRect(labelX - 10, labelY - 26, labelWidth, 34)
+  output.fillStyle = '#b84d27'
+  output.fillText(label, labelX, labelY)
   return {
     kind: 'thermometer',
     value: `${celsius.toFixed(1)} °C`,
